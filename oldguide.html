@@ -1,0 +1,655 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unity Mesh Generation</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__left">
+    <div class="stackedit__toc">
+      
+<ul>
+<li><a href="#mesh-generation-in-unity-making-walls">Mesh Generation in Unity: Making Walls</a>
+<ul>
+<li><a href="#making-a-mesh-in-unity">Vertices and triangles</a></li>
+<li><a href="#creating-a-mesh-in-unity">Creating a mesh in unity</a></li>
+<li><a href="#making-a-square">Making a square</a></li>
+<li><a href="#making-a-cube">Making a cube</a></li>
+<li><a href="#making-a-window">Making a window</a></li>
+</ul>
+</li>
+</ul>
+
+    </div>
+  </div>
+  <div class="stackedit__right">
+    <div class="stackedit__html">
+      <h1 id="mesh-generation-in-unity-making-walls">Mesh Generation in Unity: Making Walls</h1>
+<p>This guide assumes basic working knowledge of C# and unity such as creating a gameobject, the inspector and hierarchy.</p>
+<h2 id="what-is-a-mesh">What is a mesh?</h2>
+<p>A mesh is triangles is a collection of triangles and vertices arranged in a 3d space to create an object.</p>
+<h3 id="what-is-a-vertex">What is a vertex?</h3>
+<p>A vertex is a point in space.</p>
+<h2 id="making-a-mesh-in-unity">Vertices and triangles</h2>
+<h3 id="basics-of-a-mesh">Basic’s of a mesh</h3>
+<p>To create a mesh you need to define the triangles and the vertices of the object. To begin with we will create a triangle:</p>
+<p><img src="./Pictures/BasicTriangle.png" alt="Triangle labelled: VERTEX 0 -> VERTEX 3 at each corner with each corner circled and then a large text saying TRIANGLE = {0,1,2}"></p>
+<p>A vertex’s values are defined in local space and the vertices are all defined in an array.</p>
+<p>(<b>note that the order the vertices are defined in is important</b>):</p>
+<pre class=" language-c"><code class="prism # language-c">
+Vector3<span class="token punctuation">[</span><span class="token punctuation">]</span> verts  <span class="token operator">=</span> <span class="token punctuation">{</span>
+	new  <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new  <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new  <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+</code></pre>
+<h3 id="why-does-the-order-of-vertices-matter">Why does the order of vertices matter?</h3>
+<p>They matter because of the way triangles work in unity. To make a triangle face fowards the vertices must be defined in a clockwise order and they are defined by the index of the vertices.</p>
+<p><img src="./Pictures/TriangleClockwise.png" alt="Same triangle as before but with a clockwise retry symbol"></p>
+<p>This is seen as the triangle is defined by 0,1,2 which is clockwise therefore it faces us.</p>
+<p><img src="./Pictures/TriangleCounterClockwise.png" alt="No triangle clockwise retry symbol"></p>
+<p>Whilst this is defined by 2,1,0 which is counter clockwise and therefore it faces away from us and is invsibile from this angle.</p>
+<p>This is because of back culling. To optimise games only one side of a mesh is drawn as the other size won’t be seen.</p>
+<p>Therefore we will define our triangle as:</p>
+<pre class=" language-c"><code class="prism # language-c">
+<span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> tris <span class="token operator">=</span> <span class="token punctuation">{</span>
+	<span class="token number">0</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+</code></pre>
+<h2 id="creating-a-mesh-in-unity">Creating a mesh in unity</h2>
+<p>Without a mesh our triangles and vertices won’t do anything.</p>
+<p>Let’s define our variables. We need a material for the mesh so it can be displayed.</p>
+<pre class=" language-c"><code class="prism # language-c">
+public Material material<span class="token punctuation">;</span>
+
+</code></pre>
+<p>Then in our Start() method we should make the mesh.</p>
+<p>First we make a MeshFilter which will store the mesh.</p>
+<pre class=" language-c"><code class="prism # language-c">
+MeshFilter mF <span class="token operator">=</span> gameObject<span class="token punctuation">.</span>AddComponent<span class="token operator">&lt;</span>MeshFilter<span class="token operator">&gt;</span> <span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+</code></pre>
+<p>We then need a mesh renderer to render this mesh and to give this mesh renderer a material</p>
+<pre class=" language-c"><code class="prism # language-c">MeshRenderer render <span class="token operator">=</span> gameObjectAddComponent<span class="token operator">&lt;</span>MeshRenderer<span class="token operator">&gt;</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> as  MeshRenderer<span class="token punctuation">;</span>
+render<span class="token punctuation">.</span>material <span class="token operator">=</span> material<span class="token punctuation">;</span>
+</code></pre>
+<p>If we are intending on having collisons occur on mesh we need a collider too</p>
+<pre class=" language-c"><code class="prism # language-c">MeshCollider col <span class="token operator">=</span> gameObject<span class="token punctuation">.</span>AddComponent<span class="token operator">&lt;</span>MeshCollider<span class="token operator">&gt;</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> as  MeshCollider<span class="token punctuation">;</span>
+</code></pre>
+<p>Then we should define the mesh and it’s details</p>
+<pre class=" language-c"><code class="prism # language-c">Mesh msh <span class="token operator">=</span> new <span class="token function">Mesh</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+msh<span class="token punctuation">.</span>vertices <span class="token operator">=</span> verts<span class="token punctuation">;</span>
+msh<span class="token punctuation">.</span>triangles <span class="token operator">=</span> tris<span class="token punctuation">;</span>
+</code></pre>
+<p>And finally we should calculate the mesh normals and set the mesh filter’s mesh equal to the mesh</p>
+<pre class=" language-c"><code class="prism # language-c">msh<span class="token punctuation">.</span><span class="token function">RecalculateNormals</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+mF<span class="token punctuation">.</span>mesh <span class="token operator">=</span> msh<span class="token punctuation">;</span>
+</code></pre>
+<p>So all together that will look like this:</p>
+<pre class=" language-c"><code class="prism # language-c">
+public Material material<span class="token punctuation">;</span>
+
+Vector3<span class="token punctuation">[</span><span class="token punctuation">]</span> verts  <span class="token operator">=</span> <span class="token punctuation">{</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+<span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> tris  <span class="token operator">=</span> <span class="token punctuation">{</span>
+	<span class="token number">0</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+<span class="token keyword">void</span>  <span class="token function">Start</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+	MeshFilter mF <span class="token operator">=</span> gameObject<span class="token punctuation">.</span>AddComponent<span class="token operator">&lt;</span>MeshFilter<span class="token operator">&gt;</span> <span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	MeshRenderer render <span class="token operator">=</span> gameObject<span class="token punctuation">.</span>AddComponent<span class="token operator">&lt;</span>MeshRenderer<span class="token operator">&gt;</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> as  MeshRenderer<span class="token punctuation">;</span>
+	MeshCollider col <span class="token operator">=</span> gameObject<span class="token punctuation">.</span>AddComponent<span class="token operator">&lt;</span>MeshCollider<span class="token operator">&gt;</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> as  MeshCollider<span class="token punctuation">;</span>
+
+	render<span class="token punctuation">.</span>material <span class="token operator">=</span> material<span class="token punctuation">;</span>
+	Mesh msh <span class="token operator">=</span> new <span class="token function">Mesh</span> <span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+	msh<span class="token punctuation">.</span>vertices <span class="token operator">=</span> verts<span class="token punctuation">;</span>
+	msh<span class="token punctuation">.</span>triangles <span class="token operator">=</span> tris<span class="token punctuation">;</span>
+
+	msh<span class="token punctuation">.</span><span class="token function">RecalculateNormals</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	mF<span class="token punctuation">.</span>mesh <span class="token operator">=</span> msh<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>This should display a triangle in unity when the game is started.</p>
+<h2 id="making-a-square">Making a square</h2>
+<p>Making a square is the same premise as making a triangle but we need one more triangle and one more vertex. Let’s first draw a diagram</p>
+<p><img src="./Pictures/BasicSquare.png" alt="Two triangles combined to make a square"></p>
+<p>As you see we now have a new vertex which we will add to the array:</p>
+<pre class=" language-c"><code class="prism # language-c">Vector3<span class="token punctuation">[</span><span class="token punctuation">]</span> verts <span class="token operator">=</span> <span class="token punctuation">{</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	<span class="token comment">//NEW POINT</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+</code></pre>
+<p>And as you see in the picture a square is two triangles, and triangles must be defined clockwise therefore the triangles will be:</p>
+<pre class=" language-c"><code class="prism # language-c"><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> tris <span class="token operator">=</span> <span class="token punctuation">{</span>
+	<span class="token number">0</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+</code></pre>
+<p>Spaces are not needed but I recommend them for ease of reading</p>
+<p>This will then create a square in game.</p>
+<h2 id="making-a-cube">Making a cube</h2>
+<p>First we’ll draw out a cube and the coordinate points so we can visualise what we are going to make:</p>
+<p><img src="./Pictures/Cube.png" alt="Labelled Cube"></p>
+<p>As you see we are basically just making 6 squares to create the cube. So first we will define all the vertices. You should notice that the vertices are just the orignal square + 1 in the z axis</p>
+<pre class=" language-c"><code class="prism # language-c">Vector3<span class="token punctuation">[</span><span class="token punctuation">]</span> verts <span class="token operator">=</span> <span class="token punctuation">{</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+
+	<span class="token comment">//new points</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+</code></pre>
+<p>We then need to define the triangles. We can keep the vertices from the square as it will be the front square.</p>
+<pre class=" language-c"><code class="prism # language-c"><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> tris  <span class="token operator">=</span> <span class="token punctuation">{</span>
+	<span class="token comment">//front square</span>
+	<span class="token number">0</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+</code></pre>
+<p>So let’s write out the points on our cube so we can visualise the cube.</p>
+<p><img src="./Pictures/cubelabel.png" alt="Labelled Cube"></p>
+<p>We will first make the opposite side.</p>
+<p>If we just translate the triangles from the first bit we get:</p>
+<pre class=" language-c"><code class="prism # language-c">
+<span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> tris <span class="token operator">=</span> <span class="token punctuation">{</span>
+	<span class="token comment">//front square</span>
+	<span class="token number">0</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span>
+	
+	<span class="token comment">//incorrect back square</span>
+	<span class="token number">4</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+</code></pre>
+<p>If we remember before that all triangles must be clockwise we will realise that this is wrong. This will produce two foward facing squares.</p>
+<p><img src="./Pictures/exampleissue.png" alt="Labelled Cube"></p>
+<p>Therefore we need to flip the coordinates for the back square so that it is clockwise looking at it.</p>
+<pre class=" language-c"><code class="prism # language-c"><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> tris <span class="token operator">=</span> <span class="token punctuation">{</span>
+	<span class="token comment">//front square</span>
+	<span class="token number">0</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span>
+
+	<span class="token comment">//back square</span>
+	<span class="token number">6</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+</code></pre>
+<p>This will then create two opposite facing squares, next we will work on the base square.</p>
+<p><img src="./Pictures/cubebasehighlighted.png" alt="Labelled Cube"></p>
+<p>So if we imagine that base from the bottom which is the side that it should be pointing it is like this:</p>
+<p><img src="./Pictures/basesquare.png" alt="Labelled Cube"></p>
+<p>Therefore remembering it is clockwise we get</p>
+<pre><code>2,5,6, 2,1,5,
+</code></pre>
+<pre class=" language-c"><code class="prism # language-c"><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> tris <span class="token operator">=</span> <span class="token punctuation">{</span>
+	<span class="token comment">//front square</span>
+	<span class="token number">0</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span>
+	<span class="token comment">//back square</span>
+	<span class="token number">6</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span>
+
+	<span class="token comment">//bottom square</span>
+	<span class="token number">2</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+</code></pre>
+<p>To get the top we can just translate and flip because of the order we did our vertices</p>
+<pre class=" language-c"><code class="prism # language-c"><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> tris <span class="token operator">=</span> <span class="token punctuation">{</span>
+	<span class="token comment">//front square</span>
+	<span class="token number">0</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span>
+	<span class="token comment">//back square</span>
+	<span class="token number">6</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span>
+	<span class="token comment">//bottom square</span>
+	<span class="token number">2</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span>
+
+	<span class="token comment">//top square</span>
+	<span class="token number">4</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">7</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+</code></pre>
+<p>Now we will do the sides starting with the right hand side.</p>
+<p><img src="./Pictures/RightHandSideCube.png" alt="Labelled Cube"></p>
+<p>Clockwise again same way as before.</p>
+<pre class=" language-c"><code class="prism # language-c"><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> tris <span class="token operator">=</span> <span class="token punctuation">{</span>
+	<span class="token comment">//front square</span>
+	<span class="token number">0</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span>
+	<span class="token comment">//back square</span>
+	<span class="token number">6</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span>
+	<span class="token comment">//bottom square</span>
+	<span class="token number">2</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span>
+	<span class="token comment">//top square</span>
+	<span class="token number">4</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">7</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span>
+
+	<span class="token comment">//right square</span>
+	<span class="token number">3</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+</code></pre>
+<p>And then we can just do the other side as well which we just repeat the same steps for the left hand side and get:</p>
+<pre class=" language-c"><code class="prism # language-c"><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> tris <span class="token operator">=</span> <span class="token punctuation">{</span>
+	<span class="token comment">//front square</span>
+	<span class="token number">0</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span>
+	<span class="token comment">//back square</span>
+	<span class="token number">6</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span>
+	<span class="token comment">//bottom square</span>
+	<span class="token number">2</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span>
+	<span class="token comment">//top square</span>
+	<span class="token number">4</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">7</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span>
+	<span class="token comment">//right square</span>
+	<span class="token number">3</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span>
+
+	<span class="token comment">//left square</span>
+	<span class="token number">2</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+</code></pre>
+<p>All this together will get us our cube when we launch the game.</p>
+<p><img src="./Pictures/cubeingame.png" alt="Labelled Cube"></p>
+<h3 id="changing-the-code-to-make-it-be-able-to-be-dynamically-modified.">Changing the code to make it be able to be dynamically modified.</h3>
+<p>Having a 1x1 cube isn’t very useful therefore we’re going to make some variables to be able to dynamically modify the cube. Let’s add 3 variables for the sizes of the cube at the top of the script along with material. We will also add [SerializeField] above them so they are accessible from the inspector.</p>
+<pre class=" language-c"><code class="prism # language-c"><span class="token punctuation">[</span>SerializeField<span class="token punctuation">]</span>
+private <span class="token keyword">float</span> wallHeight <span class="token operator">=</span> <span class="token number">1f</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">[</span>SerializeField<span class="token punctuation">]</span>
+private <span class="token keyword">float</span> wallLength <span class="token operator">=</span> <span class="token number">1f</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">[</span>SerializeField<span class="token punctuation">]</span>
+private <span class="token keyword">float</span> wallWidth <span class="token operator">=</span> <span class="token number">1f</span><span class="token punctuation">;</span>
+</code></pre>
+<p>We then need to make our vertices array use these variables</p>
+<pre class=" language-c"><code class="prism # language-c">Vector3<span class="token punctuation">[</span><span class="token punctuation">]</span> verts <span class="token operator">=</span> <span class="token punctuation">{</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">,</span> <span class="token number">1.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+</code></pre>
+<p>A Vector3 consists of (x,y,z) therefore (wallLength, wallHeight, wallWidth) where x,y,z = 1f</p>
+<pre class=" language-c"><code class="prism # language-c">
+Vector3<span class="token punctuation">[</span><span class="token punctuation">]</span> verts  <span class="token operator">=</span> <span class="token punctuation">{</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span>wallLength<span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span>wallLength<span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+	  
+
+	new  <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> wallHeight<span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new  <span class="token function">Vector3</span><span class="token punctuation">(</span>wallLength<span class="token punctuation">,</span> wallHeight<span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new  <span class="token function">Vector3</span><span class="token punctuation">(</span>wallLength<span class="token punctuation">,</span> wallHeight<span class="token punctuation">,</span> wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+	new  <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> wallHeight<span class="token punctuation">,</span> wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+</code></pre>
+<p>Next we are going to make it so the mesh can update at any time so first we will move all the code for generating to a new function called MakeWall()</p>
+<pre class=" language-c"><code class="prism # language-c">
+private  <span class="token keyword">void</span>  <span class="token function">MakeWall</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+	Vector3<span class="token punctuation">[</span><span class="token punctuation">]</span> verts  <span class="token operator">=</span> <span class="token punctuation">{</span>
+		new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span>  wallHeight<span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new <span class="token function">Vector3</span><span class="token punctuation">(</span>wallLength<span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new <span class="token function">Vector3</span><span class="token punctuation">(</span>wallLength<span class="token punctuation">,</span>  wallHeight<span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+
+
+		new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span>  wallHeight<span class="token punctuation">,</span>  wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new <span class="token function">Vector3</span><span class="token punctuation">(</span>wallLength<span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span>  wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span>  wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new <span class="token function">Vector3</span><span class="token punctuation">(</span>wallLength<span class="token punctuation">,</span>  wallHeight<span class="token punctuation">,</span>  wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+	<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+	<span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> tris  <span class="token operator">=</span> <span class="token punctuation">{</span>
+		<span class="token comment">//front square</span>
+		<span class="token number">0</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span>
+		<span class="token comment">//back square</span>
+		<span class="token number">6</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span>
+		<span class="token comment">//bottom square</span>
+		<span class="token number">2</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span>
+		<span class="token comment">//top square</span>
+		<span class="token number">4</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">7</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span>
+		<span class="token comment">//right square</span>
+		<span class="token number">3</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span>
+		<span class="token comment">//left square</span>
+		<span class="token number">2</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span>
+	<span class="token punctuation">}</span><span class="token punctuation">;</span>
+	msh<span class="token punctuation">.</span>vertices <span class="token operator">=</span> verts<span class="token punctuation">;</span>
+	msh<span class="token punctuation">.</span>triangles <span class="token operator">=</span> tris<span class="token punctuation">;</span>
+	msh<span class="token punctuation">.</span><span class="token function">RecalculateNormals</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	mF<span class="token punctuation">.</span>mesh <span class="token operator">=</span> msh<span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span>
+
+</code></pre>
+<p>We will then call this from our Start() method so that our mesh is generated on start of the game. We will also move the mF,render and msh to the class itself so it can be accessed from other methods.</p>
+<pre class=" language-c"><code class="prism # language-c">private Mesh msh<span class="token punctuation">;</span>
+private MeshFilter mF<span class="token punctuation">;</span>
+private MeshRenderer render<span class="token punctuation">;</span>
+
+<span class="token keyword">void</span>  <span class="token function">Start</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+	mF <span class="token operator">=</span> gameObject<span class="token punctuation">.</span>AddComponent<span class="token operator">&lt;</span>MeshFilter<span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	render <span class="token operator">=</span> gameObject<span class="token punctuation">.</span>AddComponent<span class="token operator">&lt;</span>MeshRenderer<span class="token operator">&gt;</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> as  MeshRenderer<span class="token punctuation">;</span>
+	render<span class="token punctuation">.</span>material <span class="token operator">=</span> material<span class="token punctuation">;</span>
+	msh <span class="token operator">=</span> new <span class="token function">Mesh</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token function">MakeWall</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>We will then add an OnValidate() method which is called whenever the inspector changes value so we can modify the length, height and width and see the change in game</p>
+<pre class=" language-c"><code class="prism # language-c">private <span class="token keyword">void</span> <span class="token function">OnValidate</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+	<span class="token function">MakeWall</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>Altogether we now have:</p>
+<pre class=" language-c"><code class="prism # language-c">public Material material<span class="token punctuation">;</span>
+
+<span class="token punctuation">[</span>SerializeField<span class="token punctuation">]</span>
+private <span class="token keyword">float</span> wallHeight <span class="token operator">=</span> <span class="token number">1f</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">[</span>SerializeField<span class="token punctuation">]</span>
+private <span class="token keyword">float</span> wallLength <span class="token operator">=</span> <span class="token number">1f</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">[</span>SerializeField<span class="token punctuation">]</span>
+private <span class="token keyword">float</span> wallWidth <span class="token operator">=</span> <span class="token number">1f</span><span class="token punctuation">;</span>
+
+private Mesh msh<span class="token punctuation">;</span>
+private MeshFilter mF<span class="token punctuation">;</span>
+private MeshRenderer render<span class="token punctuation">;</span>
+
+  
+
+<span class="token keyword">void</span> <span class="token function">Start</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+	mF <span class="token operator">=</span> gameObject<span class="token punctuation">.</span>AddComponent<span class="token operator">&lt;</span>MeshFilter<span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	render <span class="token operator">=</span> gameObject<span class="token punctuation">.</span>AddComponent<span class="token operator">&lt;</span>MeshRenderer<span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span> as  MeshRenderer<span class="token punctuation">;</span>
+	render<span class="token punctuation">.</span>material <span class="token operator">=</span> material<span class="token punctuation">;</span>
+	msh <span class="token operator">=</span> new <span class="token function">Mesh</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token function">MakeWall</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+  
+
+private <span class="token keyword">void</span> <span class="token function">MakeWall</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+	Vector3<span class="token punctuation">[</span><span class="token punctuation">]</span> verts  <span class="token operator">=</span> <span class="token punctuation">{</span>
+		new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> wallHeight<span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new <span class="token function">Vector3</span><span class="token punctuation">(</span>wallLength<span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new <span class="token function">Vector3</span><span class="token punctuation">(</span>wallLength<span class="token punctuation">,</span> wallHeight<span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> wallHeight<span class="token punctuation">,</span> wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new <span class="token function">Vector3</span><span class="token punctuation">(</span>wallLength<span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new <span class="token function">Vector3</span><span class="token punctuation">(</span>wallLength<span class="token punctuation">,</span> wallHeight<span class="token punctuation">,</span> wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+	<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+	<span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> tris  <span class="token operator">=</span> <span class="token punctuation">{</span>
+		<span class="token comment">//front square</span>
+		<span class="token number">0</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span>
+		<span class="token comment">//back square</span>
+		<span class="token number">6</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span>
+		<span class="token comment">//bottom square</span>
+		<span class="token number">2</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span>
+		<span class="token comment">//top square</span>
+		<span class="token number">4</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">7</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span>
+		<span class="token comment">//right square</span>
+		<span class="token number">3</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span>
+		<span class="token comment">//left square</span>
+		<span class="token number">2</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span>
+	<span class="token punctuation">}</span><span class="token punctuation">;</span>
+	msh<span class="token punctuation">.</span>vertices <span class="token operator">=</span> verts<span class="token punctuation">;</span>
+	msh<span class="token punctuation">.</span>triangles <span class="token operator">=</span> tris<span class="token punctuation">;</span>
+	msh<span class="token punctuation">.</span><span class="token function">RecalculateNormals</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	mF<span class="token punctuation">.</span>mesh <span class="token operator">=</span> msh<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+private <span class="token keyword">void</span> <span class="token function">OnValidate</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+	<span class="token function">MakeWall</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>Values can be modified and will changed in game:</p>
+<p><img src="./Pictures/Inspector.png" alt="Labelled Cube"></p>
+<h2 id="making-a-window">Making a window</h2>
+<p>Lets go back to our cube.</p>
+<p><img src="./Pictures/cubelabel.png" alt="Labelled Cube"></p>
+<p>To make a window we will need a square in the front and back of the wall these will be the holes. Like this:</p>
+<p><img src="./Pictures/CubeWindowDiagram.png" alt="Labelled Cube"></p>
+<p>So let’s analyse the problem we need to be able to move the window by two amounts a length at the bottom and a length at the top to offset the window by:</p>
+<p><img src="./Pictures/WindowCenter.png" alt="Labelled Cube"></p>
+<p>We can calculate the bottom length by doing:</p>
+<p>Bottom offset = (Height of Wall - Height of Window) * Bottom ratio <br></p>
+<p>Top offset = Height of Wall + Bottom offset</p>
+<p>Left offset = (Length of Wall - Length of Window) * Length ratio <br></p>
+<p>TopWindowHeightOffset = Length of Wall + Left offset</p>
+<p>For example if our window height is 10 and a window is 5 and our ratio is 0.5.</p>
+<p>Bottom offset = (10-5) * 0.5 <br></p>
+<p>Bottom offset = 5 * 0.5 <br></p>
+<p>Bottom offset = 2.5</p>
+<p>So let’s define the serializeable variables we need at the top of the script:</p>
+<pre class=" language-c"><code class="prism # language-c"><span class="token punctuation">[</span>SerializeField<span class="token punctuation">]</span>
+private <span class="token keyword">float</span> windowHeight <span class="token operator">=</span> <span class="token number">0.25f</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">[</span>SerializeField<span class="token punctuation">]</span>
+private <span class="token keyword">float</span> windowLength <span class="token operator">=</span> <span class="token number">0.25f</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">[</span>SerializeField<span class="token punctuation">]</span>
+private <span class="token keyword">float</span> bottomRatio <span class="token operator">=</span> <span class="token number">0.5f</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">[</span>SerializeField<span class="token punctuation">]</span>
+private <span class="token keyword">float</span> leftRatio <span class="token operator">=</span> <span class="token number">0.5f</span><span class="token punctuation">;</span>
+</code></pre>
+<p>We will then put the maths formulae in the MakeWall() script:</p>
+<pre class=" language-c"><code class="prism # language-c"><span class="token keyword">float</span>  bottomWindowHeightOffset  <span class="token operator">=</span> <span class="token punctuation">(</span>wallHeight  <span class="token operator">-</span>  windowHeight<span class="token punctuation">)</span> <span class="token operator">*</span>  bottomRatio<span class="token punctuation">;</span>
+<span class="token keyword">float</span>  topWindowHeightOffset  <span class="token operator">=</span>  windowHeight  <span class="token operator">+</span>  bottomWindowHeightOffset<span class="token punctuation">;</span>
+
+<span class="token keyword">float</span>  leftWindowLengthOffset  <span class="token operator">=</span> <span class="token punctuation">(</span>wallLength  <span class="token operator">-</span>  windowLength<span class="token punctuation">)</span> <span class="token operator">*</span>  leftRatio<span class="token punctuation">;</span>
+<span class="token keyword">float</span>  rightWindowLengthOffset  <span class="token operator">=</span>  windowLength  <span class="token operator">+</span>  leftWindowLengthOffset<span class="token punctuation">;</span>
+</code></pre>
+<p>We can then use the maths formulae values to calculate the window points:</p>
+<pre class=" language-c"><code class="prism # language-c">new  <span class="token function">Vector3</span><span class="token punctuation">(</span>leftWindowLengthOffset<span class="token punctuation">,</span> bottomWindowHeightOffset<span class="token punctuation">,</span><span class="token number">0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+new  <span class="token function">Vector3</span><span class="token punctuation">(</span>rightWindowLengthOffset<span class="token punctuation">,</span> bottomWindowHeightOffset<span class="token punctuation">,</span><span class="token number">0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+new  <span class="token function">Vector3</span><span class="token punctuation">(</span>leftWindowLengthOffset<span class="token punctuation">,</span> topWindowHeightOffset<span class="token punctuation">,</span><span class="token number">0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+new  <span class="token function">Vector3</span><span class="token punctuation">(</span>rightWindowLengthOffset<span class="token punctuation">,</span> topWindowHeightOffset<span class="token punctuation">,</span><span class="token number">0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+
+new  <span class="token function">Vector3</span><span class="token punctuation">(</span>leftWindowLengthOffset<span class="token punctuation">,</span> bottomWindowHeightOffset<span class="token punctuation">,</span>wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+new  <span class="token function">Vector3</span><span class="token punctuation">(</span>rightWindowLengthOffset<span class="token punctuation">,</span> bottomWindowHeightOffset<span class="token punctuation">,</span>wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+new  <span class="token function">Vector3</span><span class="token punctuation">(</span>leftWindowLengthOffset<span class="token punctuation">,</span> topWindowHeightOffset<span class="token punctuation">,</span>wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+new  <span class="token function">Vector3</span><span class="token punctuation">(</span>rightWindowLengthOffset  topWindowHeightOffset<span class="token punctuation">,</span>wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+</code></pre>
+<p>Add this to your vertices array.</p>
+<p>Then we have to change the front facing and back facing vertices to make it work with a hole in the wall. To do this we need to split the wall into a lot of triangles and then plot those triangles as before. Here’s the triangles drawn on a wall:</p>
+<p><img src="./Pictures/WindowWithTriangles.png" alt="Labelled Cube"></p>
+<p>You can refer to the indexed wall diagram before to understand further.</p>
+<pre class=" language-c"><code class="prism # language-c"><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> tris  <span class="token operator">=</span> <span class="token punctuation">{</span>
+	<span class="token comment">//NEW</span>
+	<span class="token comment">//front square</span>
+	<span class="token number">0</span><span class="token punctuation">,</span><span class="token number">8</span><span class="token punctuation">,</span><span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span><span class="token number">10</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span><span class="token number">8</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span><span class="token number">11</span><span class="token punctuation">,</span><span class="token number">8</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">11</span><span class="token punctuation">,</span> <span class="token number">11</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">9</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">9</span><span class="token punctuation">,</span> <span class="token number">9</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">10</span><span class="token punctuation">,</span>
+	<span class="token comment">//back square</span>
+	<span class="token number">14</span><span class="token punctuation">,</span><span class="token number">12</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">,</span><span class="token number">14</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span><span class="token number">12</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">,</span><span class="token number">15</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span> <span class="token number">15</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span> <span class="token number">13</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">15</span><span class="token punctuation">,</span> <span class="token number">13</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span> <span class="token number">14</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span><span class="token number">13</span><span class="token punctuation">,</span>
+	<span class="token comment">//bottom square</span>
+	<span class="token number">2</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span>
+	<span class="token comment">//top square</span>
+	<span class="token number">4</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">7</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span>
+	<span class="token comment">//right square</span>
+	<span class="token number">3</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span>
+	<span class="token comment">//left square</span>
+	<span class="token number">2</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+</code></pre>
+<p>Doing this will allow the wall in game to have a hole in it:</p>
+<p><img src="./Pictures/wallwithwindowingame.png" alt="Labelled Cube"></p>
+<p>However you may notice a problem which is you cant see the inside of the wall and it looks as if there is no side walls. This is because of backwards culling as was mentioned before. To fix this we need more triangles so that almost a tunnel is created:</p>
+<p><img src="./Pictures/tunnel.png" alt="Labelled Cube"></p>
+<p>This similiar to the shapes that are opposite it so you can use it translated for example the base of the tunnel will the be roof of the wall with different vertices points. or you can create it manually again therefore:</p>
+<pre class=" language-c"><code class="prism # language-c"><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> tris  <span class="token operator">=</span> <span class="token punctuation">{</span>
+	<span class="token comment">//front</span>
+	<span class="token number">0</span><span class="token punctuation">,</span><span class="token number">8</span><span class="token punctuation">,</span><span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span><span class="token number">10</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span><span class="token number">8</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span><span class="token number">11</span><span class="token punctuation">,</span><span class="token number">8</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">11</span><span class="token punctuation">,</span> <span class="token number">11</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">9</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">9</span><span class="token punctuation">,</span> <span class="token number">9</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">10</span><span class="token punctuation">,</span>
+	<span class="token comment">//back</span>
+	<span class="token number">14</span><span class="token punctuation">,</span><span class="token number">12</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">,</span><span class="token number">14</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span><span class="token number">12</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">,</span><span class="token number">15</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span> <span class="token number">15</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span> <span class="token number">13</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">15</span><span class="token punctuation">,</span> <span class="token number">13</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span> <span class="token number">14</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span><span class="token number">13</span><span class="token punctuation">,</span>
+
+	<span class="token comment">//NEW</span>
+	<span class="token comment">//top of tunnel</span>
+	<span class="token number">8</span><span class="token punctuation">,</span><span class="token number">15</span><span class="token punctuation">,</span><span class="token number">12</span><span class="token punctuation">,</span> <span class="token number">8</span><span class="token punctuation">,</span><span class="token number">11</span><span class="token punctuation">,</span><span class="token number">15</span><span class="token punctuation">,</span>
+	<span class="token comment">//bottom of tunnel</span>
+	<span class="token number">14</span><span class="token punctuation">,</span><span class="token number">13</span><span class="token punctuation">,</span><span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">13</span><span class="token punctuation">,</span><span class="token number">9</span><span class="token punctuation">,</span><span class="token number">10</span><span class="token punctuation">,</span>
+	<span class="token comment">//left of tunnel</span>
+	<span class="token number">8</span><span class="token punctuation">,</span><span class="token number">14</span><span class="token punctuation">,</span><span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">8</span><span class="token punctuation">,</span><span class="token number">12</span><span class="token punctuation">,</span><span class="token number">14</span><span class="token punctuation">,</span>
+	<span class="token comment">//right of tunnel</span>
+	<span class="token number">9</span><span class="token punctuation">,</span><span class="token number">13</span><span class="token punctuation">,</span><span class="token number">11</span><span class="token punctuation">,</span> <span class="token number">13</span><span class="token punctuation">,</span><span class="token number">15</span><span class="token punctuation">,</span><span class="token number">11</span><span class="token punctuation">,</span>
+
+	<span class="token comment">//bottom square</span>
+	<span class="token number">2</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span>
+	<span class="token comment">//top square</span>
+	<span class="token number">4</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">7</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span>
+	<span class="token comment">//right square</span>
+	<span class="token number">3</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span>
+	<span class="token comment">//left square</span>
+	<span class="token number">2</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+</code></pre>
+<p>This creates a wall ingame:</p>
+<p><img src="./Pictures/wallwithtunnelingame.png" alt="Labelled Cube"></p>
+<p>Final code for a primative window:</p>
+<pre class=" language-c"><code class="prism # language-c">public Material material<span class="token punctuation">;</span>
+
+<span class="token punctuation">[</span>SerializeField<span class="token punctuation">]</span>
+private <span class="token keyword">float</span> wallHeight <span class="token operator">=</span> <span class="token number">1f</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">[</span>SerializeField<span class="token punctuation">]</span>
+private <span class="token keyword">float</span> wallLength <span class="token operator">=</span> <span class="token number">1f</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">[</span>SerializeField<span class="token punctuation">]</span>
+private <span class="token keyword">float</span> wallWidth <span class="token operator">=</span> <span class="token number">1f</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">[</span>SerializeField<span class="token punctuation">]</span>
+private <span class="token keyword">float</span> windowHeight <span class="token operator">=</span> <span class="token number">0.25f</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">[</span>SerializeField<span class="token punctuation">]</span>
+private <span class="token keyword">float</span> windowLength <span class="token operator">=</span> <span class="token number">0.25f</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">[</span>SerializeField<span class="token punctuation">]</span>
+private <span class="token keyword">float</span> bottomRatio <span class="token operator">=</span> <span class="token number">0.5f</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">[</span>SerializeField<span class="token punctuation">]</span>
+private <span class="token keyword">float</span> leftRatio  <span class="token operator">=</span> <span class="token number">0.5f</span><span class="token punctuation">;</span>
+
+private Mesh msh<span class="token punctuation">;</span>
+private MeshFilter mF<span class="token punctuation">;</span>
+private MeshRenderer render<span class="token punctuation">;</span>
+
+  
+
+<span class="token keyword">void</span>  <span class="token function">Awake</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+	mF <span class="token operator">=</span> gameObject<span class="token punctuation">.</span>AddComponent<span class="token operator">&lt;</span>MeshFilter<span class="token operator">&gt;</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	render <span class="token operator">=</span> gameObject<span class="token punctuation">.</span>AddComponent<span class="token operator">&lt;</span>MeshRenderer<span class="token operator">&gt;</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> as  MeshRenderer<span class="token punctuation">;</span>
+	render<span class="token punctuation">.</span>material <span class="token operator">=</span> material<span class="token punctuation">;</span>
+	msh <span class="token operator">=</span> new <span class="token function">Mesh</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token function">MakeWall</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+  
+
+private  <span class="token keyword">void</span>  <span class="token function">MakeWall</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+	<span class="token keyword">float</span>  bottomWindowHeightOffset  <span class="token operator">=</span> <span class="token punctuation">(</span>wallHeight  <span class="token operator">-</span>  windowHeight<span class="token punctuation">)</span> <span class="token operator">*</span>  bottomRatio<span class="token punctuation">;</span>
+	<span class="token keyword">float</span>  topWindowHeightOffset  <span class="token operator">=</span>  windowHeight  <span class="token operator">+</span>  bottomWindowHeightOffset<span class="token punctuation">;</span>
+
+	<span class="token keyword">float</span>  leftWindowLengthOffset  <span class="token operator">=</span> <span class="token punctuation">(</span>wallLength  <span class="token operator">-</span>  windowLength<span class="token punctuation">)</span> <span class="token operator">*</span>  leftRatio<span class="token punctuation">;</span>
+	<span class="token keyword">float</span>  rightWindowLengthOffset  <span class="token operator">=</span>  windowLength  <span class="token operator">+</span>  leftWindowLengthOffset<span class="token punctuation">;</span>
+
+	Vector3<span class="token punctuation">[</span><span class="token punctuation">]</span> verts  <span class="token operator">=</span> <span class="token punctuation">{</span>
+		new  <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span>  wallHeight<span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new  <span class="token function">Vector3</span><span class="token punctuation">(</span>wallLength<span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new  <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new  <span class="token function">Vector3</span><span class="token punctuation">(</span>wallLength<span class="token punctuation">,</span>  wallHeight<span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+
+		new  <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span>  wallHeight<span class="token punctuation">,</span>  wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new  <span class="token function">Vector3</span><span class="token punctuation">(</span>wallLength<span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span>  wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new  <span class="token function">Vector3</span><span class="token punctuation">(</span><span class="token number">0.0f</span><span class="token punctuation">,</span> <span class="token number">0.0f</span><span class="token punctuation">,</span>  wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new  <span class="token function">Vector3</span><span class="token punctuation">(</span>wallLength<span class="token punctuation">,</span>  wallHeight<span class="token punctuation">,</span>  wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+
+		new  <span class="token function">Vector3</span><span class="token punctuation">(</span>leftWindowLengthOffset<span class="token punctuation">,</span>  topWindowHeightOffset<span class="token punctuation">,</span><span class="token number">0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new  <span class="token function">Vector3</span><span class="token punctuation">(</span>rightWindowLengthOffset<span class="token punctuation">,</span>  bottomWindowHeightOffset<span class="token punctuation">,</span><span class="token number">0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new  <span class="token function">Vector3</span><span class="token punctuation">(</span>leftWindowLengthOffset<span class="token punctuation">,</span>  bottomWindowHeightOffset<span class="token punctuation">,</span><span class="token number">0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new  <span class="token function">Vector3</span><span class="token punctuation">(</span>rightWindowLengthOffset<span class="token punctuation">,</span>  topWindowHeightOffset<span class="token punctuation">,</span><span class="token number">0f</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+
+		new  <span class="token function">Vector3</span><span class="token punctuation">(</span>leftWindowLengthOffset<span class="token punctuation">,</span>  topWindowHeightOffset<span class="token punctuation">,</span>wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new  <span class="token function">Vector3</span><span class="token punctuation">(</span>rightWindowLengthOffset<span class="token punctuation">,</span>  bottomWindowHeightOffset<span class="token punctuation">,</span>wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new  <span class="token function">Vector3</span><span class="token punctuation">(</span>leftWindowLengthOffset<span class="token punctuation">,</span>  bottomWindowHeightOffset<span class="token punctuation">,</span>wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+		new  <span class="token function">Vector3</span><span class="token punctuation">(</span>rightWindowLengthOffset<span class="token punctuation">,</span>  topWindowHeightOffset<span class="token punctuation">,</span>wallWidth<span class="token punctuation">)</span><span class="token punctuation">,</span>
+
+	<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+	<span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> tris  <span class="token operator">=</span> <span class="token punctuation">{</span>
+		<span class="token comment">//front</span>
+		<span class="token number">0</span><span class="token punctuation">,</span><span class="token number">8</span><span class="token punctuation">,</span><span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span><span class="token number">10</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span><span class="token number">8</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span><span class="token number">11</span><span class="token punctuation">,</span><span class="token number">8</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">11</span><span class="token punctuation">,</span> <span class="token number">11</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">9</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">9</span><span class="token punctuation">,</span> <span class="token number">9</span><span class="token punctuation">,</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token number">10</span><span class="token punctuation">,</span>
+		<span class="token comment">//back</span>
+		<span class="token number">14</span><span class="token punctuation">,</span><span class="token number">12</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">,</span><span class="token number">14</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span><span class="token number">12</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span> <span class="token number">12</span><span class="token punctuation">,</span><span class="token number">15</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span> <span class="token number">15</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span> <span class="token number">13</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">15</span><span class="token punctuation">,</span> <span class="token number">13</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span> <span class="token number">14</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span><span class="token number">13</span><span class="token punctuation">,</span>
+
+		<span class="token comment">//top of tunnel</span>
+		<span class="token number">8</span><span class="token punctuation">,</span><span class="token number">15</span><span class="token punctuation">,</span><span class="token number">12</span><span class="token punctuation">,</span> <span class="token number">8</span><span class="token punctuation">,</span><span class="token number">11</span><span class="token punctuation">,</span><span class="token number">15</span><span class="token punctuation">,</span>
+		<span class="token comment">//bottom of tunnel</span>
+		<span class="token number">14</span><span class="token punctuation">,</span><span class="token number">13</span><span class="token punctuation">,</span><span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">13</span><span class="token punctuation">,</span><span class="token number">9</span><span class="token punctuation">,</span><span class="token number">10</span><span class="token punctuation">,</span>
+		<span class="token comment">//left of tunnel</span>
+		<span class="token number">8</span><span class="token punctuation">,</span><span class="token number">14</span><span class="token punctuation">,</span><span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">8</span><span class="token punctuation">,</span><span class="token number">12</span><span class="token punctuation">,</span><span class="token number">14</span><span class="token punctuation">,</span>
+		<span class="token comment">//right of tunnel</span>
+		<span class="token number">9</span><span class="token punctuation">,</span><span class="token number">13</span><span class="token punctuation">,</span><span class="token number">11</span><span class="token punctuation">,</span> <span class="token number">13</span><span class="token punctuation">,</span><span class="token number">15</span><span class="token punctuation">,</span><span class="token number">11</span><span class="token punctuation">,</span>
+
+		<span class="token comment">//bottom square</span>
+		<span class="token number">2</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span>
+		<span class="token comment">//top square</span>
+		<span class="token number">4</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">7</span><span class="token punctuation">,</span><span class="token number">3</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span>
+		<span class="token comment">//right square</span>
+		<span class="token number">3</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span><span class="token number">7</span><span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">,</span>
+		<span class="token comment">//left square</span>
+		<span class="token number">2</span><span class="token punctuation">,</span><span class="token number">6</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">,</span><span class="token number">4</span><span class="token punctuation">,</span><span class="token number">0</span><span class="token punctuation">,</span>
+	<span class="token punctuation">}</span><span class="token punctuation">;</span>
+	msh<span class="token punctuation">.</span>vertices  <span class="token operator">=</span>  verts<span class="token punctuation">;</span>
+	msh<span class="token punctuation">.</span>triangles  <span class="token operator">=</span>  tris<span class="token punctuation">;</span>
+
+	msh<span class="token punctuation">.</span><span class="token function">RecalculateNormals</span> <span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	mF<span class="token punctuation">.</span>mesh  <span class="token operator">=</span>  msh<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+private  <span class="token keyword">void</span>  <span class="token function">OnValidate</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+	<span class="token function">MakeWall</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>If you wish to get the position of the center of the window hole so you can can place models there you can do it easily by calculating add 0.5f to the offsets.</p>
+<pre class=" language-c"><code class="prism # language-c">new  <span class="token function">Vector3</span><span class="token punctuation">(</span>leftWindowLengthOffset<span class="token operator">+</span><span class="token number">0.5f</span><span class="token operator">*</span>windowLength<span class="token punctuation">,</span>bottomWindowHeightOffset<span class="token operator">+</span><span class="token number">0.5f</span><span class="token operator">*</span>windowHeight<span class="token punctuation">,</span><span class="token number">0f</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
+<p>You can use this to make an empty game object and then place it at that posistion for a reference to the point.</p>
+<pre class=" language-c"><code class="prism # language-c">public GameObject center<span class="token punctuation">;</span>
+
+private <span class="token keyword">void</span>  <span class="token function">MakeWall</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+	center<span class="token punctuation">.</span>transform<span class="token punctuation">.</span>localPosition <span class="token operator">=</span> new <span class="token function">Vector3</span><span class="token punctuation">(</span>leftWindowLengthOffset<span class="token operator">+</span><span class="token number">0.5f</span><span class="token operator">*</span>windowLength<span class="token punctuation">,</span>bottomWindowHeightOffset<span class="token operator">+</span><span class="token number">0.5f</span><span class="token operator">*</span>windowHeight<span class="token punctuation">,</span><span class="token number">0f</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+public Vector3 <span class="token function">GetCenter</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+	<span class="token keyword">return</span> center<span class="token punctuation">.</span>transform<span class="token punctuation">.</span>position<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>This can be used to set the transform of a window if you are using models.</p>
+
+    </div>
+  </div>
+</body>
+
+</html>
